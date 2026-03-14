@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NoverOS</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;700&family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --taskbar-h:52px;
+  --accent:#6C63FF;
+  --accent2:#48CAE4;
+  --accent3:#FF6584;
+  --bg:#0b0d15;
+  --surface:#161924;
+  --surface2:#1e2235;
+  --surface3:#252b42;
+  --border:#2a3050;
+  --border2:#3a4268;
+  --text:#e8eaf6;
+  --text2:#8892b0;
+  --text3:#4a5280;
+  --green:#64ffda;
+  --red:#ff6b6b;
+  --yellow:#ffd166;
+  --orb:'Orbitron',sans-serif;
+  --font:'Nunito',sans-serif;
+  --mono:'JetBrains Mono',monospace;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);height:100vh;overflow:hidden;user-select:none;}
+
+/* ═══ SETUP SCREEN ═══════════════════════════════════ */
+#setup-overlay{position:fixed;inset:0;background:#000;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;}
+#setup-bg{position:absolute;inset:0;}
+#setup-canvas{width:100%;height:100%;}
+.setup-card{position:relative;background:rgba(22,25,36,0.85);border:1px solid var(--border2);border-radius:24px;padding:48px 52px;width:520px;max-width:95vw;backdrop-filter:blur(20px);box-shadow:0 40px 100px rgba(0,0,0,0.8),0 0 60px rgba(108,99,255,0.15);}
+.setup-logo{font-family:var(--orb);font-size:36px;font-weight:900;color:#fff;text-align:center;letter-spacing:0.08em;margin-bottom:4px;}
+.setup-logo span{color:var(--accent2);}
+.setup-tagline{text-align:center;font-size:13px;color:var(--text3);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:36px;}
+.setup-step{display:none;animation:stepIn 0.4s ease;}
+.setup-step.active{display:block;}
+@keyframes stepIn{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+.setup-h{font-size:20px;font-weight:700;color:var(--text);margin-bottom:8px;}
+.setup-sub{font-size:13px;color:var(--text2);margin-bottom:28px;line-height:1.6;}
+.setup-input{width:100%;background:rgba(10,12,20,0.8);border:1px solid var(--border2);border-radius:10px;padding:12px 16px;font-family:var(--font);font-size:14px;color:var(--text);outline:none;margin-bottom:14px;transition:border-color 0.2s;}
+.setup-input:focus{border-color:var(--accent);}
+.setup-input::placeholder{color:var(--text3);}
+.setup-themes{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;}
+.theme-opt{border:2px solid var(--border);border-radius:12px;padding:12px;cursor:pointer;text-align:center;transition:all 0.2s;}
+.theme-opt:hover{border-color:var(--border2);}
+.theme-opt.selected{border-color:var(--accent);background:rgba(108,99,255,0.1);}
+.theme-opt .th-preview{width:100%;height:40px;border-radius:8px;margin-bottom:8px;}
+.theme-opt .th-name{font-size:12px;color:var(--text2);}
+.setup-wallpapers{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;}
+.wp-opt{height:70px;border-radius:10px;border:2px solid var(--border);cursor:pointer;transition:all 0.2s;overflow:hidden;}
+.wp-opt:hover{border-color:var(--border2);}
+.wp-opt.selected{border-color:var(--accent);}
+.setup-btn{width:100%;padding:14px;background:var(--accent);border:none;border-radius:12px;color:#fff;font-family:var(--orb);font-size:14px;font-weight:700;letter-spacing:0.05em;cursor:pointer;transition:all 0.2s;margin-top:8px;}
+.setup-btn:hover{background:#7a73ff;transform:translateY(-1px);}
+.setup-btn.secondary{background:transparent;border:1px solid var(--border2);color:var(--text2);}
+.setup-btn.secondary:hover{background:var(--surface2);}
+.setup-progress{display:flex;gap:8px;justify-content:center;margin-bottom:32px;}
+.sp-dot{width:28px;height:4px;border-radius:2px;background:var(--border2);transition:all 0.3s;}
+.sp-dot.active{background:var(--accent);width:40px;}
+.sp-dot.done{background:var(--accent2);}
+.setup-avatar-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:20px;}
+.av-opt{font-size:28px;width:52px;height:52px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:2px solid var(--border);cursor:pointer;transition:all 0.2s;}
+.av-opt:hover{border-color:var(--border2);}
+.av-opt.selected{border-color:var(--accent);background:rgba(108,99,255,0.15);}
+.setup-row{display:flex;gap:10px;}
+.setup-row .setup-btn{flex:1;}
+/* Boot animation */
+#boot-screen{position:fixed;inset:0;background:#000;z-index:99998;display:none;flex-direction:column;align-items:center;justify-content:center;gap:24px;}
+.boot-logo{font-family:var(--orb);font-size:52px;font-weight:900;color:#fff;letter-spacing:0.1em;animation:bootPulse 1s ease infinite alternate;}
+.boot-logo span{color:var(--accent2);}
+@keyframes bootPulse{from{opacity:0.7;}to{opacity:1;}}
+.boot-bar-wrap{width:320px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+.boot-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px;width:0%;transition:width 0.3s;}
+.boot-status{font-family:var(--mono);font-size:12px;color:var(--text3);}
+
+/* ═══ DESKTOP ════════════════════════════════════════ */
+#desktop{width:100vw;height:calc(100vh - var(--taskbar-h));position:relative;display:none;}
+#wp-canvas{position:absolute;inset:0;width:100%;height:100%;}
+.desktop-icon{position:absolute;display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px;border-radius:12px;cursor:pointer;transition:background 0.15s;width:82px;}
+.desktop-icon:hover{background:rgba(108,99,255,0.15);}
+.icon-img{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;}
+.icon-label{font-size:11px;color:#fff;text-align:center;text-shadow:0 1px 6px rgba(0,0,0,0.9);font-weight:600;}
+
+/* ═══ TASKBAR ════════════════════════════════════════ */
+#taskbar{position:fixed;bottom:0;left:0;right:0;height:var(--taskbar-h);background:rgba(11,13,21,0.92);backdrop-filter:blur(24px);border-top:1px solid var(--border);display:flex;align-items:center;padding:0 14px;gap:8px;z-index:1000;display:none;}
+#taskbar-apps{display:flex;gap:6px;flex:1;overflow:hidden;}
+.taskbar-btn{display:flex;align-items:center;gap:7px;padding:6px 11px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--text2);font-size:12px;font-family:var(--font);cursor:pointer;transition:all 0.15s;white-space:nowrap;}
+.taskbar-btn:hover{background:var(--surface2);border-color:var(--border);}
+.taskbar-btn.active{background:rgba(108,99,255,0.2);border-color:var(--accent);color:var(--text);}
+#sys-tray{display:flex;align-items:center;gap:12px;flex-shrink:0;}
+#clock{font-size:13px;color:var(--text2);font-family:var(--mono);letter-spacing:0.05em;}
+#vol-icon{font-size:16px;cursor:pointer;color:var(--text2);}
+#start-btn{width:38px;height:38px;border-radius:10px;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:var(--orb);font-size:11px;font-weight:700;color:#fff;flex-shrink:0;letter-spacing:0.05em;}
+
+/* ═══ WINDOWS ════════════════════════════════════════ */
+.window{position:absolute;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:0 28px 70px rgba(0,0,0,0.65),0 0 0 1px rgba(255,255,255,0.03);display:flex;flex-direction:column;overflow:hidden;min-width:300px;min-height:180px;}
+.window.focused{border-color:rgba(108,99,255,0.45);box-shadow:0 28px 70px rgba(0,0,0,0.85),0 0 0 1px rgba(108,99,255,0.15);}
+.titlebar{height:42px;display:flex;align-items:center;padding:0 14px;gap:10px;cursor:move;background:var(--surface2);flex-shrink:0;border-bottom:1px solid var(--border);}
+.win-controls{display:flex;gap:7px;}
+.wc{width:12px;height:12px;border-radius:50%;cursor:pointer;border:none;outline:none;}
+.wc.close{background:#ff5f57;}.wc.min{background:#febc2e;}.wc.max{background:#28c840;}
+.wc:hover{filter:brightness(1.15);}
+.titlebar-title{flex:1;text-align:center;font-size:12px;font-weight:600;color:var(--text2);pointer-events:none;letter-spacing:0.02em;}
+.win-body{flex:1;overflow:hidden;display:flex;flex-direction:column;}
+
+/* ═══ START MENU ═════════════════════════════════════ */
+#start-menu{position:fixed;bottom:calc(var(--taskbar-h)+8px);left:8px;background:rgba(22,25,36,0.95);border:1px solid var(--border2);border-radius:18px;width:300px;padding:16px;box-shadow:0 24px 60px rgba(0,0,0,0.7);z-index:999;display:none;backdrop-filter:blur(20px);}
+.sm-user{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border);}
+.sm-avatar{width:40px;height:40px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:20px;}
+.sm-username{font-size:14px;font-weight:700;color:var(--text);}
+.sm-sub{font-size:11px;color:var(--text3);}
+.sm-search{width:100%;background:rgba(10,12,20,0.8);border:1px solid var(--border2);border-radius:9px;padding:8px 12px;font-family:var(--font);font-size:13px;color:var(--text);outline:none;margin-bottom:14px;}
+.sm-search:focus{border-color:var(--accent);}
+.sm-title{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;}
+.sm-apps{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;}
+.sm-app{display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px 4px;border-radius:10px;cursor:pointer;transition:background 0.15s;}
+.sm-app:hover{background:rgba(108,99,255,0.15);}
+.sm-app-icon{font-size:24px;}
+.sm-app-name{font-size:10px;color:var(--text2);text-align:center;line-height:1.3;}
+.sm-power{display:flex;gap:8px;padding-top:12px;border-top:1px solid var(--border);}
+.sm-power-btn{flex:1;padding:7px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-size:12px;font-family:var(--font);cursor:pointer;text-align:center;}
+.sm-power-btn:hover{background:var(--surface2);}
+
+/* ═══ CONTEXT MENU ═══════════════════════════════════ */
+#ctx-menu{position:fixed;background:rgba(22,25,36,0.97);border:1px solid var(--border2);border-radius:12px;padding:6px;min-width:170px;box-shadow:0 16px 40px rgba(0,0,0,0.6);z-index:9998;display:none;backdrop-filter:blur(16px);}
+.ctx-item{padding:7px 12px;border-radius:7px;font-size:13px;cursor:pointer;color:var(--text2);display:flex;align-items:center;gap:10px;}
+.ctx-item:hover{background:var(--surface3);color:var(--text);}
+.ctx-sep{height:1px;background:var(--border);margin:4px 0;}
+
+/* ═══ NOTIFICATIONS ══════════════════════════════════ */
+#notif-tray{position:fixed;top:14px;right:14px;display:flex;flex-direction:column;gap:8px;z-index:9999;pointer-events:none;}
+.notif{background:rgba(22,25,36,0.95);border:1px solid var(--border2);border-radius:12px;padding:13px 16px;max-width:270px;animation:slideIn 0.3s ease;pointer-events:all;backdrop-filter:blur(16px);}
+.notif-title{font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px;}
+.notif-body{font-size:11px;color:var(--text2);}
+@keyframes slideIn{from{opacity:0;transform:translateX(16px);}to{opacity:1;transform:translateX(0);}}
+
+/* ═══ CALCULATOR ═════════════════════════════════════ */
+#calc-body{padding:18px;display:flex;flex-direction:column;gap:10px;}
+#calc-display{background:#080a12;border-radius:12px;padding:14px 18px;text-align:right;}
+#calc-expr{font-family:var(--mono);font-size:12px;color:var(--text3);min-height:16px;}
+#calc-result{font-family:var(--mono);font-size:30px;color:var(--text);font-weight:500;word-break:break-all;}
+.calc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;}
+.calc-btn{height:50px;border-radius:10px;border:none;font-size:15px;font-family:var(--font);font-weight:600;cursor:pointer;transition:all 0.1s;}
+.calc-btn:active{transform:scale(0.94);}
+.calc-btn.num{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+.calc-btn.num:hover{background:var(--surface3);}
+.calc-btn.op{background:rgba(108,99,255,0.2);color:var(--accent2);border:1px solid rgba(108,99,255,0.3);}
+.calc-btn.op:hover{background:rgba(108,99,255,0.35);}
+.calc-btn.eq{background:var(--accent);color:#fff;border:none;}
+.calc-btn.eq:hover{background:#7a73ff;}
+.calc-btn.fn{background:rgba(255,255,255,0.04);color:var(--text2);border:1px solid var(--border);}
+.calc-btn.fn:hover{background:rgba(255,255,255,0.09);}
+.calc-btn.wide{grid-column:span 2;}
+
+/* ═══ BROWSER ════════════════════════════════════════ */
+#browser-body{display:flex;flex-direction:column;height:100%;}
+#browser-bar{display:flex;align-items:center;gap:7px;padding:9px 12px;background:var(--surface2);border-bottom:1px solid var(--border);}
+.nav-btn{width:26px;height:26px;border-radius:6px;border:none;background:transparent;color:var(--text2);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;}
+.nav-btn:hover{background:var(--surface3);color:var(--text);}
+#url-bar{flex:1;background:#080a12;border:1px solid var(--border);border-radius:8px;padding:5px 11px;font-family:var(--mono);font-size:12px;color:var(--text);outline:none;}
+#url-bar:focus{border-color:var(--accent);}
+#browser-content{flex:1;position:relative;overflow:hidden;background:#fff;}
+#browser-iframe{width:100%;height:100%;border:none;}
+#browser-home{position:absolute;inset:0;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:32px;}
+.bh-logo{font-family:var(--orb);font-size:28px;font-weight:900;color:var(--text);letter-spacing:0.08em;}.bh-logo span{color:var(--accent2);}
+#hs-wrap{display:flex;gap:8px;width:100%;max-width:440px;}
+#hs-input{flex:1;background:#080a12;border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-family:var(--font);font-size:13px;color:var(--text);outline:none;}
+#hs-input:focus{border-color:var(--accent);}
+#hs-btn{padding:10px 18px;background:var(--accent);border:none;border-radius:10px;color:#fff;font-family:var(--font);font-size:13px;cursor:pointer;}
+.quick-links{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;}
+.quick-link{display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px;border-radius:10px;cursor:pointer;border:1px solid var(--border);background:var(--surface2);transition:all 0.15s;min-width:68px;}
+.quick-link:hover{border-color:var(--accent);background:rgba(108,99,255,0.08);}
+.ql-icon{font-size:20px;}.ql-label{font-size:10px;color:var(--text2);}
+#browser-status{padding:3px 12px;font-size:10px;color:var(--text3);background:var(--surface2);border-top:1px solid var(--border);font-family:var(--mono);}
+
+/* ═══ MUSIC PLAYER ═══════════════════════════════════ */
+#music-body{display:flex;flex-direction:column;height:100%;background:var(--surface);}
+#music-vis{height:120px;position:relative;overflow:hidden;flex-shrink:0;background:linear-gradient(180deg,#0d0f1a 0%,var(--surface) 100%);}
+#vis-canvas{width:100%;height:100%;}
+#music-now{padding:16px 20px 10px;display:flex;align-items:center;gap:16px;flex-shrink:0;}
+#music-art{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent3));display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;transition:all 0.3s;}
+#music-art.playing{animation:spinArt 8s linear infinite;}
+@keyframes spinArt{to{transform:rotate(360deg);}}
+#music-info{flex:1;min-width:0;}
+#music-title{font-size:15px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#music-artist{font-size:12px;color:var(--text2);margin-top:2px;}
+#music-controls{display:flex;align-items:center;justify-content:center;gap:10px;padding:10px 20px;flex-shrink:0;}
+.mc-btn{width:36px;height:36px;border-radius:50%;border:none;background:var(--surface2);color:var(--text2);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;}
+.mc-btn:hover{background:var(--surface3);color:var(--text);}
+.mc-btn.primary{width:48px;height:48px;background:var(--accent);color:#fff;font-size:18px;}
+.mc-btn.primary:hover{background:#7a73ff;}
+#music-progress-wrap{padding:0 20px 10px;flex-shrink:0;}
+#music-timeline{display:flex;align-items:center;gap:10px;}
+#music-time{font-size:11px;color:var(--text3);font-family:var(--mono);min-width:36px;}
+#music-prog{flex:1;height:4px;background:var(--border);border-radius:2px;cursor:pointer;position:relative;}
+#music-prog-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px;width:0%;pointer-events:none;}
+#music-vol-row{display:flex;align-items:center;gap:8px;padding:0 20px 12px;flex-shrink:0;}
+#music-vol-icon{font-size:14px;color:var(--text3);}
+#music-vol{flex:1;height:3px;background:var(--border);border-radius:2px;cursor:pointer;}
+#music-vol-fill{height:100%;background:var(--accent);border-radius:2px;width:70%;}
+#music-playlist{flex:1;overflow-y:auto;padding:8px 12px;border-top:1px solid var(--border);}
+.playlist-header{display:flex;align-items:center;justify-content:space-between;padding:6px 8px;margin-bottom:6px;}
+.playlist-title{font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.08em;}
+.pl-add-btn{font-size:11px;color:var(--accent2);cursor:pointer;border:1px solid var(--border);border-radius:6px;padding:4px 10px;background:transparent;font-family:var(--font);}
+.pl-add-btn:hover{background:rgba(72,202,228,0.1);}
+#playlist-input{display:none;}
+.pl-item{display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;cursor:pointer;transition:background 0.12s;}
+.pl-item:hover{background:var(--surface2);}
+.pl-item.active{background:rgba(108,99,255,0.15);}
+.pl-num{font-size:11px;color:var(--text3);font-family:var(--mono);width:20px;text-align:right;flex-shrink:0;}
+.pl-icon{font-size:18px;flex-shrink:0;}
+.pl-info{flex:1;min-width:0;}
+.pl-name{font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pl-dur{font-size:11px;color:var(--text3);font-family:var(--mono);flex-shrink:0;}
+.pl-empty{text-align:center;color:var(--text3);font-size:13px;padding:24px;line-height:1.8;}
+
+/* ═══ APP RUNNER ═════════════════════════════════════ */
+#ar-body{display:flex;flex-direction:column;height:100%;}
+#app-drop-zone{border:2px dashed var(--border);border-radius:12px;margin:16px;padding:30px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;transition:all 0.2s;flex-shrink:0;}
+#app-drop-zone:hover,#app-drop-zone.drag-over{border-color:var(--accent);background:rgba(108,99,255,0.05);}
+#app-drop-zone .drop-icon{font-size:36px;}
+#app-drop-zone p{color:var(--text2);font-size:13px;text-align:center;}
+#app-drop-zone span{color:var(--text3);font-size:11px;}
+#app-file-input{display:none;}
+#app-log{flex:1;background:#080a12;margin:0 16px 0;border-radius:10px;padding:14px;overflow-y:auto;font-family:var(--mono);font-size:11px;color:var(--green);line-height:1.9;}
+.log-error{color:var(--red);}.log-warn{color:var(--yellow);}.log-info{color:var(--text2);}
+#app-actions{display:flex;gap:8px;padding:12px 16px;}
+.action-btn{padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:var(--font);font-size:12px;cursor:pointer;transition:all 0.15s;}
+.action-btn:hover{border-color:var(--accent);color:var(--accent2);}
+.action-btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+
+/* ═══ FILE MANAGER ═══════════════════════════════════ */
+#fm-body{display:flex;height:100%;}
+#fm-sidebar{width:150px;background:#0f1119;border-right:1px solid var(--border);padding:10px;flex-shrink:0;}
+.fm-s-title{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin:10px 0 6px;}
+.fm-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;cursor:pointer;font-size:12px;color:var(--text2);}
+.fm-item:hover,.fm-item.active{background:var(--surface2);color:var(--text);}
+#fm-main{flex:1;display:flex;flex-direction:column;}
+#fm-toolbar{padding:9px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+#fm-path{font-size:12px;color:var(--text2);font-family:var(--mono);flex:1;}
+#fm-grid{flex:1;overflow-y:auto;padding:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:10px;align-content:start;}
+.fm-file{display:flex;flex-direction:column;align-items:center;gap:5px;padding:7px;border-radius:8px;cursor:pointer;}
+.fm-file:hover{background:var(--surface2);}
+.fm-file-icon{font-size:30px;}.fm-file-name{font-size:10px;color:var(--text2);text-align:center;word-break:break-all;}
+
+/* ═══ SETTINGS ═══════════════════════════════════════ */
+#st-body{display:flex;height:100%;}
+#st-nav{width:170px;background:#0f1119;border-right:1px solid var(--border);padding:14px;}
+.st-nav-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--text2);margin-bottom:2px;}
+.st-nav-item:hover,.st-nav-item.active{background:var(--surface2);color:var(--text);}
+#st-content{flex:1;padding:22px;overflow-y:auto;}
+.st-group{margin-bottom:26px;}
+.st-group-title{font-size:12px;font-weight:700;color:var(--text);margin-bottom:14px;padding-bottom:7px;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:0.06em;}
+.st-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid rgba(42,48,80,0.4);}
+.st-row-label{font-size:13px;color:var(--text2);}
+.st-row-desc{font-size:11px;color:var(--text3);margin-top:1px;}
+.toggle{width:40px;height:22px;background:var(--border);border-radius:11px;cursor:pointer;position:relative;transition:background 0.2s;flex-shrink:0;}
+.toggle.on{background:var(--accent);}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left 0.2s;}
+.toggle.on::after{left:21px;}
+
+/* ═══ RETRO GAMES ════════════════════════════════════ */
+#games-body{display:flex;flex-direction:column;height:100%;background:var(--surface);}
+#games-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:var(--surface2);}
+.games-logo{font-family:var(--orb);font-size:16px;font-weight:900;color:var(--accent2);letter-spacing:0.06em;}
+#game-tabs{display:flex;gap:6px;}
+.game-tab{padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-family:var(--font);font-size:12px;cursor:pointer;transition:all 0.15s;}
+.game-tab:hover{background:var(--surface3);}
+.game-tab.active{background:rgba(108,99,255,0.2);border-color:var(--accent);color:var(--text);}
+#game-viewport{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;overflow:hidden;position:relative;}
+#game-canvas{border:2px solid var(--border2);border-radius:8px;image-rendering:pixelated;max-width:100%;max-height:100%;}
+#game-lobby{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;}
+.game-card{background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:20px;text-align:center;cursor:pointer;transition:all 0.2s;width:140px;}
+.game-card:hover{border-color:var(--accent);background:rgba(108,99,255,0.1);transform:translateY(-3px);}
+.game-card-icon{font-size:36px;margin-bottom:8px;}
+.game-card-name{font-size:13px;font-weight:700;color:var(--text);}
+.game-card-desc{font-size:11px;color:var(--text3);margin-top:4px;}
+.games-row{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;}
+#game-hud{display:flex;align-items:center;justify-content:space-between;padding:8px 18px;background:var(--surface2);border-top:1px solid var(--border);font-family:var(--mono);font-size:12px;color:var(--text2);}
+#game-score{color:var(--accent2);font-weight:700;}
+.game-ctrl-hint{font-size:11px;color:var(--text3);}
+#game-back-btn{padding:5px 12px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--text2);font-family:var(--font);font-size:11px;cursor:pointer;}
+#game-back-btn:hover{background:var(--surface3);}
+
+/* scrollbars */
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+</style>
+</head>
+<body>
+
+<!-- ═══ SETUP OVERLAY ═══════════════════════════════ -->
+<div id="setup-overlay">
+  <div id="setup-bg"><canvas id="setup-canvas"></canvas></div>
+  <div class="setup-card">
+    <div class="setup-logo">Nover<span>OS</span></div>
+    <div class="setup-tagline">Web Operating System · v2.0</div>
+    <div class="setup-progress">
+      <div class="sp-dot active" id="dot0"></div>
+      <div class="sp-dot" id="dot1"></div>
+      <div class="sp-dot" id="dot2"></div>
+      <div class="sp-dot" id="dot3"></div>
+    </div>
+
+    <!-- Step 0: Welcome -->
+    <div class="setup-step active" id="step0">
+      <div class="setup-h">Welcome to NoverOS</div>
+      <div class="setup-sub">Let's get your system set up in just a few steps. This will only take a minute.</div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:28px;">
+        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(108,99,255,0.08);border-radius:10px;border:1px solid rgba(108,99,255,0.2);">
+          <span style="font-size:22px;">🌐</span><div><div style="font-size:13px;font-weight:700;color:var(--text);">Web Browser</div><div style="font-size:11px;color:var(--text3);">Browse the web with NovBrowser</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(72,202,228,0.08);border-radius:10px;border:1px solid rgba(72,202,228,0.2);">
+          <span style="font-size:22px;">🎵</span><div><div style="font-size:13px;font-weight:700;color:var(--text);">Music Player</div><div style="font-size:11px;color:var(--text3);">Play your MP3 files with visualizer</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(255,101,132,0.08);border-radius:10px;border:1px solid rgba(255,101,132,0.2);">
+          <span style="font-size:22px;">🕹️</span><div><div style="font-size:13px;font-weight:700;color:var(--text);">Retro Games</div><div style="font-size:11px;color:var(--text3);">Snake, Tetris, Breakout & more</div></div>
+        </div>
+      </div>
+      <button class="setup-btn" onclick="nextStep()">Get Started →</button>
+    </div>
+
+    <!-- Step 1: User -->
+    <div class="setup-step" id="step1">
+      <div class="setup-h">Create your account</div>
+      <div class="setup-sub">Choose a username and pick your avatar.</div>
+      <div class="setup-avatar-grid" id="avatar-grid">
+        <div class="av-opt selected" data-av="🧑" onclick="pickAvatar(this)">🧑</div>
+        <div class="av-opt" data-av="👩" onclick="pickAvatar(this)">👩</div>
+        <div class="av-opt" data-av="🧙" onclick="pickAvatar(this)">🧙</div>
+        <div class="av-opt" data-av="🤖" onclick="pickAvatar(this)">🤖</div>
+        <div class="av-opt" data-av="👾" onclick="pickAvatar(this)">👾</div>
+        <div class="av-opt" data-av="🦊" onclick="pickAvatar(this)">🦊</div>
+        <div class="av-opt" data-av="🐱" onclick="pickAvatar(this)">🐱</div>
+        <div class="av-opt" data-av="🦁" onclick="pickAvatar(this)">🦁</div>
+        <div class="av-opt" data-av="🐼" onclick="pickAvatar(this)">🐼</div>
+        <div class="av-opt" data-av="🎮" onclick="pickAvatar(this)">🎮</div>
+      </div>
+      <input class="setup-input" id="username-input" type="text" placeholder="Enter your username..." maxlength="20">
+      <div class="setup-row">
+        <button class="setup-btn secondary" onclick="prevStep()">← Back</button>
+        <button class="setup-btn" onclick="nextStep()">Continue →</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Wallpaper -->
+    <div class="setup-step" id="step2">
+      <div class="setup-h">Choose your wallpaper</div>
+      <div class="setup-sub">Pick a background for your desktop.</div>
+      <div class="setup-wallpapers" id="wp-picker">
+        <div class="wp-opt selected" data-wp="stars" style="background:radial-gradient(ellipse at 30% 50%,#1a1040,#0b0d15),radial-gradient(ellipse at 80% 20%,#0d2240,transparent);"></div>
+        <div class="wp-opt" data-wp="aurora" style="background:linear-gradient(135deg,#0d1b2a,#1a4a3a,#0d2240);"></div>
+        <div class="wp-opt" data-wp="sunset" style="background:linear-gradient(135deg,#1a0a0a,#3d1515,#1a0a2a);"></div>
+        <div class="wp-opt" data-wp="forest" style="background:linear-gradient(135deg,#0a1a0a,#0f2d15,#0a1a0a);"></div>
+        <div class="wp-opt" data-wp="ocean" style="background:linear-gradient(135deg,#030d1a,#051e38,#030a1a);"></div>
+        <div class="wp-opt" data-wp="desert" style="background:linear-gradient(135deg,#1a1205,#2d2008,#1a0d05);"></div>
+      </div>
+      <div class="setup-row">
+        <button class="setup-btn secondary" onclick="prevStep()">← Back</button>
+        <button class="setup-btn" onclick="nextStep()">Continue →</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Ready -->
+    <div class="setup-step" id="step3">
+      <div style="text-align:center;margin-bottom:24px;">
+        <div style="font-size:64px;margin-bottom:12px;" id="final-avatar">🧑</div>
+        <div style="font-size:20px;font-weight:700;color:var(--text);">Ready, <span id="final-name" style="color:var(--accent2);">User</span>!</div>
+        <div style="font-size:13px;color:var(--text2);margin-top:6px;">Your NoverOS is configured and ready to launch.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px;padding:14px;background:rgba(10,12,20,0.5);border-radius:10px;font-family:var(--mono);font-size:12px;color:var(--text3);">
+        <div><span style="color:var(--green);">✓</span> User account created</div>
+        <div><span style="color:var(--green);">✓</span> Wallpaper selected</div>
+        <div><span style="color:var(--green);">✓</span> Apps initialized</div>
+        <div><span style="color:var(--green);">✓</span> .exe / .app runtime ready</div>
+        <div><span style="color:var(--green);">✓</span> Retro game engine loaded</div>
+      </div>
+      <button class="setup-btn" onclick="launchOS()">🚀 Launch NoverOS</button>
+    </div>
+  </div>
+</div>
+
+<!-- Boot screen -->
+<div id="boot-screen">
+  <div class="boot-logo">Nover<span>OS</span></div>
+  <div class="boot-bar-wrap"><div class="boot-bar" id="boot-bar"></div></div>
+  <div class="boot-status" id="boot-status">Initializing kernel...</div>
+</div>
+
+<!-- ═══ DESKTOP ═══════════════════════════════════════ -->
+<div id="desktop">
+  <canvas id="wp-canvas"></canvas>
+  <div class="desktop-icon" style="top:24px;left:24px;" ondblclick="openApp('browser')">
+    <div class="icon-img" style="background:linear-gradient(135deg,#0d6efd,#48cae4);">🌐</div>
+    <span class="icon-label">NovBrowser</span>
+  </div>
+  <div class="desktop-icon" style="top:120px;left:24px;" ondblclick="openApp('calc')">
+    <div class="icon-img" style="background:linear-gradient(135deg,#6c63ff,#a855f7);">🧮</div>
+    <span class="icon-label">Calculator</span>
+  </div>
+  <div class="desktop-icon" style="top:216px;left:24px;" ondblclick="openApp('music')">
+    <div class="icon-img" style="background:linear-gradient(135deg,#ff6584,#ff9a5c);">🎵</div>
+    <span class="icon-label">Music</span>
+  </div>
+  <div class="desktop-icon" style="top:312px;left:24px;" ondblclick="openApp('games')">
+    <div class="icon-img" style="background:linear-gradient(135deg,#06d6a0,#48cae4);">🕹️</div>
+    <span class="icon-label">Retro Games</span>
+  </div>
+  <div class="desktop-icon" style="top:408px;left:24px;" ondblclick="openApp('apprunner')">
+    <div class="icon-img" style="background:linear-gradient(135deg,#ffd166,#ef9f27);">📦</div>
+    <span class="icon-label">App Runner</span>
+  </div>
+  <div class="desktop-icon" style="top:24px;left:120px;" ondblclick="openApp('filemgr')">
+    <div class="icon-img" style="background:linear-gradient(135deg,#4cc9f0,#4361ee);">📁</div>
+    <span class="icon-label">Files</span>
+  </div>
+  <div class="desktop-icon" style="top:120px;left:120px;" ondblclick="openApp('settings')">
+    <div class="icon-img" style="background:linear-gradient(135deg,#8892b0,#5e6090);">⚙️</div>
+    <span class="icon-label">Settings</span>
+  </div>
+</div>
+
+<!-- ═══ TASKBAR ═══════════════════════════════════════ -->
+<div id="taskbar" style="display:none;">
+  <button id="start-btn" onclick="toggleStartMenu()">N▸</button>
+  <div id="taskbar-apps"></div>
+  <div id="sys-tray">
+    <span id="vol-icon" title="Volume">🔊</span>
+    <div id="clock"></div>
+  </div>
+</div>
+
+<!-- Start Menu -->
+<div id="start-menu">
+  <div class="sm-user">
+    <div class="sm-avatar" id="sm-avatar">🧑</div>
+    <div><div class="sm-username" id="sm-username">User</div><div class="sm-sub">NoverOS</div></div>
+  </div>
+  <input class="sm-search" type="text" placeholder="Search apps...">
+  <div class="sm-title">All Apps</div>
+  <div class="sm-apps">
+    <div class="sm-app" onclick="openApp('browser')"><div class="sm-app-icon">🌐</div><div class="sm-app-name">Browser</div></div>
+    <div class="sm-app" onclick="openApp('calc')"><div class="sm-app-icon">🧮</div><div class="sm-app-name">Calc</div></div>
+    <div class="sm-app" onclick="openApp('music')"><div class="sm-app-icon">🎵</div><div class="sm-app-name">Music</div></div>
+    <div class="sm-app" onclick="openApp('games')"><div class="sm-app-icon">🕹️</div><div class="sm-app-name">Games</div></div>
+    <div class="sm-app" onclick="openApp('apprunner')"><div class="sm-app-icon">📦</div><div class="sm-app-name">Apps</div></div>
+    <div class="sm-app" onclick="openApp('filemgr')"><div class="sm-app-icon">📁</div><div class="sm-app-name">Files</div></div>
+    <div class="sm-app" onclick="openApp('settings')"><div class="sm-app-icon">⚙️</div><div class="sm-app-name">Settings</div></div>
+  </div>
+  <div class="sm-power">
+    <button class="sm-power-btn" onclick="location.reload()">🔄 Restart</button>
+    <button class="sm-power-btn" onclick="location.reload()">⏻ Shut Down</button>
+  </div>
+</div>
+
+<!-- Context Menu -->
+<div id="ctx-menu">
+  <div class="ctx-item" onclick="openApp('browser')">🌐 Open Browser</div>
+  <div class="ctx-item" onclick="openApp('calc')">🧮 Calculator</div>
+  <div class="ctx-item" onclick="openApp('music')">🎵 Music Player</div>
+  <div class="ctx-item" onclick="openApp('games')">🕹️ Retro Games</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item" onclick="openApp('settings')">⚙️ Settings</div>
+  <div class="ctx-item" onclick="notify('Desktop','Refreshed!')">🔄 Refresh</div>
+</div>
+
+<!-- Notifications -->
+<div id="notif-tray"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// SETUP STATE
+// ═══════════════════════════════════════════════════════
+let setupStep=0,selectedAvatar='🧑',selectedWp='stars';
+let osUsername='User';
+
+// Setup canvas particles
+(function(){
+  const c=document.getElementById('setup-canvas');
+  const ctx=c.getContext('2d');
+  const resize=()=>{c.width=window.innerWidth;c.height=window.innerHeight;};
+  resize();window.addEventListener('resize',resize);
+  const pts=Array.from({length:120},()=>({
+    x:Math.random()*window.innerWidth,y:Math.random()*window.innerHeight,
+    vx:(Math.random()-0.5)*0.4,vy:(Math.random()-0.5)*0.4,
+    r:Math.random()*1.5+0.5,a:Math.random()
+  }));
+  function draw(){
+    ctx.clearRect(0,0,c.width,c.height);
+    ctx.fillStyle='rgba(11,13,21,0.98)';ctx.fillRect(0,0,c.width,c.height);
+    pts.forEach(p=>{
+      p.x+=p.vx;p.y+=p.vy;
+      if(p.x<0||p.x>c.width)p.vx*=-1;
+      if(p.y<0||p.y>c.height)p.vy*=-1;
+      ctx.globalAlpha=p.a*0.7;
+      ctx.fillStyle='#6c63ff';
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();
+    });
+    ctx.globalAlpha=1;
+    requestAnimationFrame(draw);
+  }draw();
+})();
+
+function nextStep(){
+  if(setupStep===1){
+    const uname=document.getElementById('username-input').value.trim();
+    osUsername=uname||'User';
+  }
+  if(setupStep===2){
+    document.getElementById('final-avatar').textContent=selectedAvatar;
+    document.getElementById('final-name').textContent=osUsername;
+  }
+  if(setupStep>=3)return;
+  document.getElementById('dot'+setupStep).classList.remove('active');
+  document.getElementById('dot'+setupStep).classList.add('done');
+  setupStep++;
+  document.getElementById('step'+(setupStep-1)).classList.remove('active');
+  document.getElementById('step'+setupStep).classList.add('active');
+  document.getElementById('dot'+setupStep).classList.add('active');
+}
+function prevStep(){
+  if(setupStep<=0)return;
+  document.getElementById('dot'+setupStep).classList.remove('active');
+  setupStep--;
+  document.getElementById('step'+(setupStep+1)).classList.remove('active');
+  document.getElementById('step'+setupStep).classList.add('active');
+  document.getElementById('dot'+setupStep).classList.remove('done');
+  document.getElementById('dot'+setupStep).classList.add('active');
+}
+function pickAvatar(el){
+  document.querySelectorAll('.av-opt').forEach(e=>e.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedAvatar=el.dataset.av;
+}
+document.querySelectorAll('.wp-opt').forEach(el=>{
+  el.onclick=()=>{
+    document.querySelectorAll('.wp-opt').forEach(e=>e.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedWp=el.dataset.wp;
+  };
+});
+
+function launchOS(){
+  document.getElementById('setup-overlay').style.display='none';
+  const bs=document.getElementById('boot-screen');
+  bs.style.display='flex';
+  const msgs=['Initializing kernel...','Loading system drivers...','Starting windowing server...','Mounting filesystems...','Launching NoverOS shell...'];
+  let i=0;
+  const bar=document.getElementById('boot-bar');
+  const stat=document.getElementById('boot-status');
+  const iv=setInterval(()=>{
+    i++;
+    bar.style.width=(i/msgs.length*100)+'%';
+    stat.textContent=msgs[i]||'Done!';
+    if(i>=msgs.length){
+      clearInterval(iv);
+      setTimeout(()=>{
+        bs.style.display='none';
+        startDesktop();
+      },600);
+    }
+  },420);
+}
+
+// ═══════════════════════════════════════════════════════
+// DESKTOP
+// ═══════════════════════════════════════════════════════
+function startDesktop(){
+  document.getElementById('desktop').style.display='block';
+  document.getElementById('taskbar').style.display='flex';
+  document.getElementById('sm-avatar').textContent=selectedAvatar;
+  document.getElementById('sm-username').textContent=osUsername;
+  drawWallpaper();
+  startClock();
+  setTimeout(()=>notify('NoverOS','Welcome back, '+osUsername+'! 👋'),800);
+  setTimeout(()=>notify('Music','Drag MP3 files into the Music app to play them.'),2200);
+}
+
+// ─── Wallpapers ──────────────────────────────────────
+function drawWallpaper(){
+  const c=document.getElementById('wp-canvas');
+  const ctx=c.getContext('2d');
+  const resize=()=>{c.width=c.offsetWidth;c.height=c.offsetHeight;};
+  resize();window.addEventListener('resize',()=>{resize();renderWp();});
+  const palettes={
+    stars:{bg:'#0b0d15',c1:'#1a1040',c2:'#0d2240',star:'#c8d6f0'},
+    aurora:{bg:'#0d1b2a',c1:'#1a4a3a',c2:'#0d2240',star:'#a8ffd6'},
+    sunset:{bg:'#1a0a0a',c1:'#3d1515',c2:'#1a0a2a',star:'#ffcca8'},
+    forest:{bg:'#0a1a0a',c1:'#0f2d15',c2:'#0a1a0a',star:'#b8ffb8'},
+    ocean:{bg:'#030d1a',c1:'#051e38',c2:'#030a1a',star:'#a8d6ff'},
+    desert:{bg:'#1a1205',c1:'#2d2008',c2:'#1a0d05',star:'#ffd6a8'},
+  };
+  const stars=Array.from({length:200},()=>({
+    x:Math.random(),y:Math.random(),
+    r:Math.random()*1.2+0.2,
+    a:Math.random(),sp:Math.random()*0.005+0.001
+  }));
+  function renderWp(){
+    const p=palettes[selectedWp]||palettes.stars;
+    ctx.fillStyle=p.bg;ctx.fillRect(0,0,c.width,c.height);
+    const g1=ctx.createRadialGradient(c.width*0.2,c.height*0.5,0,c.width*0.2,c.height*0.5,c.width*0.6);
+    g1.addColorStop(0,p.c1+'88');g1.addColorStop(1,'transparent');
+    ctx.fillStyle=g1;ctx.fillRect(0,0,c.width,c.height);
+    const g2=ctx.createRadialGradient(c.width*0.8,c.height*0.2,0,c.width*0.8,c.height*0.2,c.width*0.5);
+    g2.addColorStop(0,p.c2+'66');g2.addColorStop(1,'transparent');
+    ctx.fillStyle=g2;ctx.fillRect(0,0,c.width,c.height);
+    stars.forEach(s=>{
+      s.a+=s.sp;
+      ctx.globalAlpha=Math.abs(Math.sin(s.a*Math.PI))*0.8;
+      ctx.fillStyle=p.star;
+      ctx.beginPath();ctx.arc(s.x*c.width,s.y*c.height,s.r,0,Math.PI*2);ctx.fill();
+    });
+    ctx.globalAlpha=1;
+  }
+  function loop(){renderWp();requestAnimationFrame(loop);}loop();
+}
+
+// ─── Clock ───────────────────────────────────────────
+function startClock(){
+  const update=()=>{
+    const n=new Date();
+    document.getElementById('clock').textContent=n.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  };setInterval(update,1000);update();
+}
+
+// ─── Notifications ───────────────────────────────────
+function notify(title,body){
+  const t=document.getElementById('notif-tray');
+  const n=document.createElement('div');n.className='notif';
+  n.innerHTML=`<div class="notif-title">${title}</div><div class="notif-body">${body}</div>`;
+  t.appendChild(n);
+  setTimeout(()=>{n.style.animation='slideIn 0.3s reverse';setTimeout(()=>n.remove(),300);},3500);
+}
+
+// ─── Context Menu ────────────────────────────────────
+document.getElementById('desktop').addEventListener('contextmenu',e=>{
+  e.preventDefault();
+  const m=document.getElementById('ctx-menu');
+  m.style.display='block';
+  m.style.left=Math.min(e.clientX,innerWidth-180)+'px';
+  m.style.top=Math.min(e.clientY,innerHeight-200)+'px';
+});
+document.addEventListener('click',()=>document.getElementById('ctx-menu').style.display='none');
+
+// ─── Start Menu ──────────────────────────────────────
+function toggleStartMenu(){
+  const m=document.getElementById('start-menu');
+  m.style.display=m.style.display==='block'?'none':'block';
+}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#start-menu')&&!e.target.closest('#start-btn'))
+    document.getElementById('start-menu').style.display='none';
+});
+
+// ═══════════════════════════════════════════════════════
+// WINDOW MANAGER
+// ═══════════════════════════════════════════════════════
+const windows={};let zTop=10,activeWin=null;
+
+function createWindow(id,title,icon,width,height,content){
+  if(windows[id]){focusWindow(id);return;}
+  const w=document.createElement('div');
+  w.className='window';w.id='win-'+id;
+  const lft=90+Math.random()*100,top=35+Math.random()*60;
+  w.style.cssText=`width:${width}px;height:${height}px;left:${lft}px;top:${top}px;z-index:${++zTop};`;
+  w.innerHTML=`<div class="titlebar" id="tb-${id}"><div class="win-controls"><button class="wc close" onclick="closeWindow('${id}')"></button><button class="wc min" onclick="minimizeWindow('${id}')"></button><button class="wc max" onclick="maximizeWindow('${id}')"></button></div><div class="titlebar-title">${icon} ${title}</div></div><div class="win-body" id="wb-${id}">${content}</div>`;
+  document.getElementById('desktop').appendChild(w);
+  windows[id]={el:w,title,icon,minimized:false,maxed:false,prev:null};
+  makeDraggable(w,document.getElementById('tb-'+id));
+  makeResizable(w);
+  addTaskbarBtn(id,title,icon);
+  focusWindow(id);
+  if(id==='calc')initCalc();
+  if(id==='browser')initBrowser();
+  if(id==='music')initMusic();
+  if(id==='games')initGames();
+  if(id==='apprunner')initAppRunner();
+}
+function focusWindow(id){
+  if(!windows[id])return;
+  Object.values(windows).forEach(w=>w.el.classList.remove('focused'));
+  windows[id].el.style.zIndex=++zTop;
+  windows[id].el.classList.add('focused');
+  activeWin=id;
+  document.querySelectorAll('.taskbar-btn').forEach(b=>b.classList.remove('active'));
+  const tb=document.getElementById('tbtn-'+id);if(tb)tb.classList.add('active');
+}
+function closeWindow(id){
+  if(!windows[id])return;
+  windows[id].el.remove();delete windows[id];
+  const tb=document.getElementById('tbtn-'+id);if(tb)tb.remove();
+}
+function minimizeWindow(id){
+  if(!windows[id])return;
+  windows[id].el.style.display='none';windows[id].minimized=true;
+  const tb=document.getElementById('tbtn-'+id);if(tb)tb.classList.remove('active');
+}
+function maximizeWindow(id){
+  const w=windows[id];if(!w)return;
+  if(w.maxed){Object.assign(w.el.style,w.prev);w.maxed=false;}
+  else{
+    w.prev={left:w.el.style.left,top:w.el.style.top,width:w.el.style.width,height:w.el.style.height};
+    w.el.style.left='0';w.el.style.top='0';
+    w.el.style.width='100vw';w.el.style.height='calc(100vh - 52px)';
+    w.maxed=true;
+  }
+}
+function addTaskbarBtn(id,title,icon){
+  const b=document.createElement('button');
+  b.className='taskbar-btn';b.id='tbtn-'+id;
+  b.innerHTML=`${icon} ${title}`;
+  b.onclick=()=>{
+    if(windows[id].minimized){windows[id].el.style.display='';windows[id].minimized=false;focusWindow(id);}
+    else if(activeWin===id)minimizeWindow(id);
+    else focusWindow(id);
+  };
+  document.getElementById('taskbar-apps').appendChild(b);
+}
+function makeDraggable(win,handle){
+  let ox,oy,drag=false;
+  handle.addEventListener('mousedown',e=>{
+    if(e.target.classList.contains('wc'))return;
+    drag=true;ox=e.clientX-win.offsetLeft;oy=e.clientY-win.offsetTop;
+    focusWindow(win.id.replace('win-',''));e.preventDefault();
+  });
+  document.addEventListener('mousemove',e=>{if(!drag)return;
+    win.style.left=Math.max(0,Math.min(e.clientX-ox,innerWidth-80))+'px';
+    win.style.top=Math.max(0,Math.min(e.clientY-oy,innerHeight-90))+'px';
+  });
+  document.addEventListener('mouseup',()=>drag=false);
+}
+function makeResizable(win){
+  const h=document.createElement('div');
+  h.style.cssText='position:absolute;bottom:0;right:0;width:14px;height:14px;cursor:se-resize;z-index:1;';
+  win.appendChild(h);
+  let dr=false,sx,sy,sw,sh;
+  h.addEventListener('mousedown',e=>{dr=true;sx=e.clientX;sy=e.clientY;sw=win.offsetWidth;sh=win.offsetHeight;e.preventDefault();});
+  document.addEventListener('mousemove',e=>{if(!dr)return;win.style.width=Math.max(300,sw+e.clientX-sx)+'px';win.style.height=Math.max(200,sh+e.clientY-sy)+'px';});
+  document.addEventListener('mouseup',()=>dr=false);
+}
+function openApp(id){
+  document.getElementById('start-menu').style.display='none';
+  const apps={
+    calc:{title:'Calculator',icon:'🧮',w:340,h:510},
+    browser:{title:'NovBrowser',icon:'🌐',w:800,h:560},
+    music:{title:'Music',icon:'🎵',w:380,h:580},
+    games:{title:'Retro Games',icon:'🕹️',w:600,h:520},
+    apprunner:{title:'App Runner',icon:'📦',w:560,h:460},
+    filemgr:{title:'Files',icon:'📁',w:620,h:450},
+    settings:{title:'Settings',icon:'⚙️',w:580,h:460},
+  };
+  const a=apps[id];if(!a)return;
+  createWindow(id,a.title,a.icon,a.w,a.h,buildContent(id));
+}
+
+// ═══════════════════════════════════════════════════════
+// CALCULATOR
+// ═══════════════════════════════════════════════════════
+function buildContent(id){
+  if(id==='calc')return `<div id="calc-body"><div id="calc-display"><div id="calc-expr"></div><div id="calc-result">0</div></div><div class="calc-grid"><button class="calc-btn fn" data-a="clear">C</button><button class="calc-btn fn" data-a="sign">+/−</button><button class="calc-btn fn" data-a="pct">%</button><button class="calc-btn op" data-op="/">÷</button><button class="calc-btn num" data-n="7">7</button><button class="calc-btn num" data-n="8">8</button><button class="calc-btn num" data-n="9">9</button><button class="calc-btn op" data-op="*">×</button><button class="calc-btn num" data-n="4">4</button><button class="calc-btn num" data-n="5">5</button><button class="calc-btn num" data-n="6">6</button><button class="calc-btn op" data-op="-">−</button><button class="calc-btn num" data-n="1">1</button><button class="calc-btn num" data-n="2">2</button><button class="calc-btn num" data-n="3">3</button><button class="calc-btn op" data-op="+">+</button><button class="calc-btn num wide" data-n="0">0</button><button class="calc-btn num" data-a="dot">.</button><button class="calc-btn eq" data-a="eq">=</button></div></div>`;
+  if(id==='browser')return buildBrowserHTML();
+  if(id==='music')return buildMusicHTML();
+  if(id==='games')return buildGamesHTML();
+  if(id==='apprunner')return buildARHTML();
+  if(id==='filemgr')return buildFMHTML();
+  if(id==='settings')return buildSettingsHTML();
+  return '';
+}
+function initCalc(){
+  let cur='0',expr='',op='',prev='',fresh=false;
+  const disp=()=>{document.getElementById('calc-result').textContent=cur;document.getElementById('calc-expr').textContent=expr;};
+  document.getElementById('wb-calc').addEventListener('click',e=>{
+    const b=e.target.closest('.calc-btn');if(!b)return;
+    if(b.dataset.n!==undefined){if(fresh){cur='';fresh=false;}cur=cur==='0'?b.dataset.n:cur+b.dataset.n;}
+    else if(b.dataset.op){prev=cur;op=b.dataset.op;expr=cur+' '+b.textContent;fresh=true;}
+    else if(b.dataset.a==='eq'){
+      if(!op)return;
+      const map={'+':(a,b)=>a+b,'-':(a,b)=>a-b,'*':(a,b)=>a*b,'/':(a,b)=>a/b};
+      const r=map[op](parseFloat(prev),parseFloat(cur));
+      expr=prev+' '+op+' '+cur+' =';cur=parseFloat(r.toFixed(10)).toString();op='';fresh=true;
+    }
+    else if(b.dataset.a==='clear'){cur='0';expr='';op='';prev='';fresh=false;}
+    else if(b.dataset.a==='sign'){cur=cur.startsWith('-')?cur.slice(1):'-'+cur;}
+    else if(b.dataset.a==='pct'){cur=(parseFloat(cur)/100).toString();}
+    else if(b.dataset.a==='dot'){if(!cur.includes('.'))cur+='.';fresh=false;}
+    disp();
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// BROWSER
+// ═══════════════════════════════════════════════════════
+function buildBrowserHTML(){
+  return `<div id="browser-body"><div id="browser-bar"><button class="nav-btn" id="bb-back">←</button><button class="nav-btn" id="bb-fwd">→</button><button class="nav-btn" id="bb-rel">↺</button><button class="nav-btn" id="bb-hm">⌂</button><input id="url-bar" type="text" value="nover://home" placeholder="Search or enter URL..."><button class="nav-btn" id="bb-go" style="color:var(--accent)">→</button></div><div id="browser-content"><div id="browser-home"><div class="bh-logo">Nover<span>Browser</span></div><div id="hs-wrap"><input id="hs-input" type="text" placeholder="Search the web..."><button id="hs-btn" onclick="doBrowserSearch()">Go</button></div><div class="quick-links"><div class="quick-link" onclick="browserNav('https://wikipedia.org')"><div class="ql-icon">📖</div><div class="ql-label">Wikipedia</div></div><div class="quick-link" onclick="browserNav('https://news.ycombinator.com')"><div class="ql-icon">🗞️</div><div class="ql-label">Hacker News</div></div><div class="quick-link" onclick="browserNav('https://github.com')"><div class="ql-icon">💻</div><div class="ql-label">GitHub</div></div><div class="quick-link" onclick="browserNav('https://reddit.com')"><div class="ql-icon">🤖</div><div class="ql-label">Reddit</div></div><div class="quick-link" onclick="browserNav('https://youtube.com')"><div class="ql-icon">▶️</div><div class="ql-label">YouTube</div></div></div></div><iframe id="browser-iframe" style="display:none;" sandbox="allow-scripts allow-same-origin allow-forms"></iframe></div><div id="browser-status">Ready · NoverBrowser</div></div>`;
+}
+function initBrowser(){
+  const bar=document.getElementById('url-bar'),frame=document.getElementById('browser-iframe'),home=document.getElementById('browser-home'),status=document.getElementById('browser-status');
+  function go(url){
+    if(!url||url==='nover://home'){frame.style.display='none';home.style.display='flex';bar.value='nover://home';status.textContent='Home · NoverBrowser';return;}
+    let u=url.trim();if(!u.startsWith('http'))u='https://'+u;
+    bar.value=u;frame.style.display='block';home.style.display='none';
+    status.textContent='Loading...';frame.src=u;frame.onload=()=>status.textContent=u;
+  }
+  window.browserNav=go;window.doBrowserSearch=()=>{const q=document.getElementById('hs-input').value;if(q)go('https://www.google.com/search?q='+encodeURIComponent(q));};
+  document.getElementById('bb-go').onclick=()=>go(bar.value);
+  document.getElementById('bb-hm').onclick=()=>go('nover://home');
+  document.getElementById('bb-rel').onclick=()=>{if(frame.src)frame.src=frame.src;};
+  bar.addEventListener('keydown',e=>{if(e.key==='Enter')go(bar.value);});
+  document.getElementById('hs-input').addEventListener('keydown',e=>{if(e.key==='Enter')window.doBrowserSearch();});
+}
+
+// ═══════════════════════════════════════════════════════
+// MUSIC PLAYER
+// ═══════════════════════════════════════════════════════
+function buildMusicHTML(){
+  return `<div id="music-body"><div id="music-vis"><canvas id="vis-canvas"></canvas></div><div id="music-now"><div id="music-art">🎵</div><div id="music-info"><div id="music-title">No track loaded</div><div id="music-artist">Add MP3 files below</div></div></div><div id="music-controls"><button class="mc-btn" id="mc-shuf" title="Shuffle">⇄</button><button class="mc-btn" id="mc-prev" title="Previous">⏮</button><button class="mc-btn primary" id="mc-play" title="Play/Pause">▶</button><button class="mc-btn" id="mc-next" title="Next">⏭</button><button class="mc-btn" id="mc-rep" title="Repeat">↻</button></div><div id="music-progress-wrap"><div id="music-timeline"><span id="music-time">0:00</span><div id="music-prog"><div id="music-prog-fill"></div></div><span id="music-dur">0:00</span></div></div><div id="music-vol-row"><span id="music-vol-icon">🔊</span><div id="music-vol"><div id="music-vol-fill"></div></div></div><div id="music-playlist"><div class="playlist-header"><span class="playlist-title">Playlist</span><button class="pl-add-btn" onclick="document.getElementById('playlist-input').click()">+ Add MP3</button></div><input type="file" id="playlist-input" accept=".mp3,.ogg,.wav,.flac,.m4a" multiple><div id="pl-list"><div class="pl-empty">🎵 Drop MP3 files here or click "Add MP3"<br><span style="font-size:11px;color:var(--text3);">Supports MP3, WAV, OGG, FLAC, M4A</span></div></div></div></div>`;
+}
+
+function initMusic(){
+  let tracks=[],currentTrack=-1,audioCtx=null,analyser=null,src=null,audio=null,rafId=null,repeat=false,shuffle=false;
+
+  function getAudio(){if(!audio){audio=new Audio();audio.volume=0.7;}return audio;}
+
+  function setupVisualizer(){
+    if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    if(!analyser){analyser=audioCtx.createAnalyser();analyser.fftSize=128;}
+    if(src){try{src.disconnect();}catch(e){}}
+    src=audioCtx.createMediaElementSource(getAudio());
+    src.connect(analyser);analyser.connect(audioCtx.destination);
+  }
+
+  function drawVis(){
+    const c=document.getElementById('vis-canvas');if(!c)return;
+    const ctx=c.getContext('2d');
+    c.width=c.offsetWidth;c.height=c.offsetHeight;
+    if(!analyser){
+      ctx.clearRect(0,0,c.width,c.height);
+      rafId=requestAnimationFrame(drawVis);return;
+    }
+    const buf=new Uint8Array(analyser.frequencyBinCount);
+    function frame(){
+      if(!document.getElementById('vis-canvas')){cancelAnimationFrame(rafId);return;}
+      analyser.getByteFrequencyData(buf);
+      ctx.clearRect(0,0,c.width,c.height);
+      const bw=c.width/buf.length*2;
+      buf.forEach((v,i)=>{
+        const h=v/255*c.height;
+        const hue=220+i*1.5;
+        ctx.fillStyle=`hsla(${hue},80%,60%,0.85)`;
+        ctx.fillRect(i*bw,c.height-h,bw-1,h);
+      });
+      rafId=requestAnimationFrame(frame);
+    }frame();
+  }
+
+  function loadTrack(idx){
+    if(idx<0||idx>=tracks.length)return;
+    currentTrack=idx;
+    const t=tracks[idx];
+    const a=getAudio();
+    a.src=t.url;
+    document.getElementById('music-title').textContent=t.name;
+    document.getElementById('music-artist').textContent=t.type.toUpperCase()+' · NoverOS Music';
+    document.getElementById('music-art').textContent='🎵';
+    document.querySelectorAll('.pl-item').forEach((el,i)=>el.classList.toggle('active',i===idx));
+    a.onloadedmetadata=()=>{document.getElementById('music-dur').textContent=fmt(a.duration);};
+    a.ontimeupdate=()=>{
+      const p=a.duration?a.currentTime/a.duration*100:0;
+      document.getElementById('music-prog-fill').style.width=p+'%';
+      document.getElementById('music-time').textContent=fmt(a.currentTime);
+    };
+    a.onended=()=>{
+      if(repeat){a.currentTime=0;a.play();}
+      else if(shuffle)loadTrack(Math.floor(Math.random()*tracks.length));
+      else if(currentTrack<tracks.length-1)loadTrack(currentTrack+1);
+      else{document.getElementById('mc-play').textContent='▶';document.getElementById('music-art').classList.remove('playing');}
+    };
+    a.play().then(()=>{
+      setupVisualizer();
+      document.getElementById('mc-play').textContent='⏸';
+      document.getElementById('music-art').classList.add('playing');
+    }).catch(()=>{});
+    if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume();
+  }
+
+  function fmt(s){
+    if(isNaN(s))return '0:00';
+    const m=Math.floor(s/60),sec=Math.floor(s%60);
+    return m+':'+(sec<10?'0':'')+sec;
+  }
+
+  function renderPlaylist(){
+    const list=document.getElementById('pl-list');
+    if(!tracks.length){list.innerHTML='<div class="pl-empty">🎵 No tracks yet.<br>Click "Add MP3" to load files.</div>';return;}
+    list.innerHTML=tracks.map((t,i)=>`<div class="pl-item${i===currentTrack?' active':''}" onclick="musicPlay(${i})"><span class="pl-num">${i+1}</span><span class="pl-icon">🎵</span><div class="pl-info"><div class="pl-name">${t.name}</div></div><span class="pl-dur">—</span></div>`).join('');
+  }
+
+  window.musicPlay=(i)=>loadTrack(i);
+
+  document.getElementById('playlist-input').addEventListener('change',e=>{
+    [...e.target.files].forEach(f=>{
+      const url=URL.createObjectURL(f);
+      const name=f.name.replace(/\.[^.]+$/,'');
+      tracks.push({name,url,type:f.name.split('.').pop()});
+    });
+    renderPlaylist();
+    if(currentTrack===-1&&tracks.length)loadTrack(0);
+    notify('Music',`Added ${e.target.files.length} track(s)`);
+  });
+
+  document.getElementById('mc-play').onclick=()=>{
+    const a=getAudio();
+    if(!tracks.length)return;
+    if(currentTrack===-1){loadTrack(0);return;}
+    if(a.paused){
+      a.play();document.getElementById('mc-play').textContent='⏸';
+      document.getElementById('music-art').classList.add('playing');
+      if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume();
+    }else{
+      a.pause();document.getElementById('mc-play').textContent='▶';
+      document.getElementById('music-art').classList.remove('playing');
+    }
+  };
+  document.getElementById('mc-next').onclick=()=>{
+    if(shuffle)loadTrack(Math.floor(Math.random()*tracks.length));
+    else loadTrack((currentTrack+1)%tracks.length);
+  };
+  document.getElementById('mc-prev').onclick=()=>loadTrack((currentTrack-1+tracks.length)%Math.max(tracks.length,1));
+  document.getElementById('mc-rep').onclick=function(){repeat=!repeat;this.style.color=repeat?'var(--accent2)':'';};
+  document.getElementById('mc-shuf').onclick=function(){shuffle=!shuffle;this.style.color=shuffle?'var(--accent2)':'';};
+
+  document.getElementById('music-prog').onclick=e=>{
+    const r=e.currentTarget.getBoundingClientRect();
+    const pct=(e.clientX-r.left)/r.width;
+    const a=getAudio();if(a.duration)a.currentTime=pct*a.duration;
+  };
+  document.getElementById('music-vol').onclick=e=>{
+    const r=e.currentTarget.getBoundingClientRect();
+    const pct=(e.clientX-r.left)/r.width;
+    const a=getAudio();a.volume=pct;
+    document.getElementById('music-vol-fill').style.width=(pct*100)+'%';
+  };
+
+  // drag & drop on window
+  const wb=document.getElementById('wb-music');
+  wb.addEventListener('dragover',e=>e.preventDefault());
+  wb.addEventListener('drop',e=>{
+    e.preventDefault();
+    const files=[...e.dataTransfer.files].filter(f=>f.type.startsWith('audio/')||/\.(mp3|wav|ogg|flac|m4a)$/i.test(f.name));
+    files.forEach(f=>{tracks.push({name:f.name.replace(/\.[^.]+$/,''),url:URL.createObjectURL(f),type:f.name.split('.').pop()});});
+    renderPlaylist();
+    if(currentTrack===-1&&tracks.length)loadTrack(0);
+    if(files.length)notify('Music',`Added ${files.length} track(s)`);
+  });
+  drawVis();
+}
+
+// ═══════════════════════════════════════════════════════
+// RETRO GAMES
+// ═══════════════════════════════════════════════════════
+function buildGamesHTML(){
+  return `<div id="games-body"><div id="games-header"><div class="games-logo">🕹 RETRO ARCADE</div><div id="game-tabs"><button class="game-tab active" onclick="showGameLobby()">Lobby</button></div></div><div id="game-viewport"><div id="game-lobby"><div style="font-family:var(--orb);font-size:14px;color:var(--text2);margin-bottom:16px;letter-spacing:0.1em;">SELECT GAME</div><div class="games-row"><div class="game-card" onclick="startGame('snake')"><div class="game-card-icon">🐍</div><div class="game-card-name">Snake</div><div class="game-card-desc">Arrow keys</div></div><div class="game-card" onclick="startGame('tetris')"><div class="game-card-icon">🟦</div><div class="game-card-name">Tetris</div><div class="game-card-desc">Arrow keys</div></div><div class="game-card" onclick="startGame('breakout')"><div class="game-card-icon">🏓</div><div class="game-card-name">Breakout</div><div class="game-card-desc">Mouse / Arrow</div></div><div class="game-card" onclick="startGame('astro')"><div class="game-card-icon">🚀</div><div class="game-card-name">Asteroids</div><div class="game-card-desc">Arrow + Space</div></div></div></div><canvas id="game-canvas" style="display:none;"></canvas></div><div id="game-hud"><span id="game-score">SCORE: 0</span><span class="game-ctrl-hint" id="game-hint">Choose a game above</span><button id="game-back-btn" style="display:none;" onclick="showGameLobby()">← Back</button></div></div>`;
+}
+
+let gameLoop=null,gameState={};
+
+function showGameLobby(){
+  if(gameLoop){clearInterval(gameLoop);cancelAnimationFrame(gameLoop);gameLoop=null;}
+  document.removeEventListener('keydown',gameKeyHandler);
+  document.getElementById('game-lobby').style.display='flex';
+  document.getElementById('game-canvas').style.display='none';
+  document.getElementById('game-back-btn').style.display='none';
+  document.getElementById('game-score').textContent='SCORE: 0';
+  document.getElementById('game-hint').textContent='Choose a game above';
+}
+
+function gameKeyHandler(e){if(gameState.onKey)gameState.onKey(e);}
+
+function startGame(name){
+  document.getElementById('game-lobby').style.display='none';
+  const canvas=document.getElementById('game-canvas');
+  canvas.style.display='block';
+  document.getElementById('game-back-btn').style.display='';
+  if(gameLoop){clearInterval(gameLoop);cancelAnimationFrame(gameLoop);}
+  document.removeEventListener('keydown',gameKeyHandler);
+  document.addEventListener('keydown',gameKeyHandler);
+  if(name==='snake')initSnake(canvas);
+  if(name==='tetris')initTetris(canvas);
+  if(name==='breakout')initBreakout(canvas);
+  if(name==='astro')initAsteroid(canvas);
+}
+
+// ─── SNAKE ───────────────────────────────────────────
+function initSnake(canvas){
+  const S=20,W=20,H=20;
+  canvas.width=W*S;canvas.height=H*S;
+  const ctx=canvas.getContext('2d');
+  let snake=[{x:10,y:10}],dir={x:1,y:0},food=rndFood(),score=0,over=false;
+  gameState={};
+  function rndFood(){return{x:Math.floor(Math.random()*W),y:Math.floor(Math.random()*H)};}
+  gameState.onKey=e=>{
+    const k=e.key;
+    if(k==='ArrowUp'&&dir.y===0){dir={x:0,y:-1};}
+    if(k==='ArrowDown'&&dir.y===0){dir={x:0,y:1};}
+    if(k==='ArrowLeft'&&dir.x===0){dir={x:-1,y:0};}
+    if(k==='ArrowRight'&&dir.x===0){dir={x:1,y:0};}
+    if(k==='r'||k==='R')initSnake(canvas);
+    e.preventDefault();
+  };
+  document.getElementById('game-hint').textContent='Arrow keys to move · R to restart';
+  function step(){
+    if(over)return;
+    const head={x:snake[0].x+dir.x,y:snake[0].y+dir.y};
+    if(head.x<0||head.x>=W||head.y<0||head.y>=H||snake.some(s=>s.x===head.x&&s.y===head.y)){
+      over=true;ctx.fillStyle='rgba(0,0,0,0.6)';ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.fillStyle='#ff6b6b';ctx.font='bold 24px Orbitron,sans-serif';ctx.textAlign='center';
+      ctx.fillText('GAME OVER',canvas.width/2,canvas.height/2);
+      ctx.fillStyle='#8892b0';ctx.font='12px Nunito,sans-serif';
+      ctx.fillText('Press R to restart',canvas.width/2,canvas.height/2+28);return;
+    }
+    snake.unshift(head);
+    if(head.x===food.x&&head.y===food.y){score+=10;food=rndFood();}
+    else snake.pop();
+    document.getElementById('game-score').textContent='SCORE: '+score;
+    ctx.fillStyle='#0b0d15';ctx.fillRect(0,0,canvas.width,canvas.height);
+    // grid
+    ctx.strokeStyle='rgba(255,255,255,0.03)';ctx.lineWidth=0.5;
+    for(let i=0;i<W;i++){ctx.beginPath();ctx.moveTo(i*S,0);ctx.lineTo(i*S,canvas.height);ctx.stroke();}
+    for(let i=0;i<H;i++){ctx.beginPath();ctx.moveTo(0,i*S);ctx.lineTo(canvas.width,i*S);ctx.stroke();}
+    snake.forEach((s,i)=>{
+      const g=ctx.createRadialGradient(s.x*S+S/2,s.y*S+S/2,0,s.x*S+S/2,s.y*S+S/2,S);
+      g.addColorStop(0,i===0?'#64ffda':'#6c63ff');g.addColorStop(1,i===0?'#48cae4aa':'#6c63ff88');
+      ctx.fillStyle=g;ctx.beginPath();ctx.roundRect(s.x*S+1,s.y*S+1,S-2,S-2,4);ctx.fill();
+    });
+    ctx.fillStyle='#ffd166';ctx.beginPath();ctx.arc(food.x*S+S/2,food.y*S+S/2,S/2-2,0,Math.PI*2);ctx.fill();
+  }
+  gameLoop=setInterval(step,130);
+}
+
+// ─── TETRIS ──────────────────────────────────────────
+function initTetris(canvas){
+  const BS=24,COLS=10,ROWS=20;
+  canvas.width=COLS*BS+120;canvas.height=ROWS*BS;
+  const ctx=canvas.getContext('2d');
+  const SHAPES=[[[1,1,1,1]],[[1,1],[1,1]],[[0,1,0],[1,1,1]],[[1,0],[1,0],[1,1]],[[0,1],[0,1],[1,1]],[[0,1,1],[1,1,0]],[[1,1,0],[0,1,1]]];
+  const COLORS=['#48cae4','#ffd166','#a855f7','#ff9a5c','#4cc9f0','#64ffda','#ff6584'];
+  let board=Array.from({length:ROWS},()=>Array(COLS).fill(0));
+  let piece,score=0,lost=false;
+  function newPiece(){
+    const i=Math.floor(Math.random()*SHAPES.length);
+    piece={shape:SHAPES[i].map(r=>[...r]),color:COLORS[i],x:3,y:0};
+    if(collide(piece)){lost=true;}
+  }
+  function collide(p,ox=0,oy=0,s=p.shape){
+    return s.some((row,dy)=>row.some((v,dx)=>v&&(p.y+dy+oy>=ROWS||p.x+dx+ox<0||p.x+dx+ox>=COLS||board[p.y+dy+oy]?.[p.x+dx+ox])));
+  }
+  function merge(){piece.shape.forEach((row,dy)=>row.forEach((v,dx)=>{if(v)board[piece.y+dy][piece.x+dx]=piece.color;}));}
+  function clearLines(){let n=0;for(let r=ROWS-1;r>=0;r--){if(board[r].every(v=>v)){board.splice(r,1);board.unshift(Array(COLS).fill(0));n++;r++;}}score+=n*100;}
+  function rotate(s){return s[0].map((_,i)=>s.map(row=>row[i]).reverse());}
+  gameState.onKey=e=>{
+    if(lost)return;
+    if(e.key==='ArrowLeft'&&!collide(piece,-1,0))piece.x--;
+    if(e.key==='ArrowRight'&&!collide(piece,1,0))piece.x++;
+    if(e.key==='ArrowDown'&&!collide(piece,0,1))piece.y++;
+    if(e.key==='ArrowUp'){const r=rotate(piece.shape);if(!collide(piece,0,0,r))piece.shape=r;}
+    if(e.key===' '){while(!collide(piece,0,1))piece.y++; merge();clearLines();newPiece();}
+    e.preventDefault();
+  };
+  document.getElementById('game-hint').textContent='Arrow keys · Space = drop';
+  newPiece();
+  function draw(){
+    ctx.fillStyle='#0b0d15';ctx.fillRect(0,0,canvas.width,canvas.height);
+    // board cells
+    for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+      ctx.strokeStyle='rgba(255,255,255,0.04)';ctx.lineWidth=0.5;
+      ctx.strokeRect(c*BS,r*BS,BS,BS);
+      if(board[r][c]){ctx.fillStyle=board[r][c];ctx.fillRect(c*BS+1,r*BS+1,BS-2,BS-2);}
+    }
+    // current piece
+    piece.shape.forEach((row,dy)=>row.forEach((v,dx)=>{
+      if(v){ctx.fillStyle=piece.color;ctx.fillRect((piece.x+dx)*BS+1,(piece.y+dy)*BS+1,BS-2,BS-2);}
+    }));
+    // sidebar
+    ctx.fillStyle='#161924';ctx.fillRect(COLS*BS,0,120,canvas.height);
+    ctx.fillStyle='#4a5280';ctx.font='10px Orbitron,sans-serif';ctx.textAlign='center';
+    ctx.fillText('SCORE',COLS*BS+60,30);
+    ctx.fillStyle='#48cae4';ctx.font='bold 18px Orbitron,sans-serif';
+    ctx.fillText(score,COLS*BS+60,52);
+    document.getElementById('game-score').textContent='SCORE: '+score;
+    if(lost){ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(0,0,COLS*BS,canvas.height);ctx.fillStyle='#ff6b6b';ctx.font='bold 20px Orbitron,sans-serif';ctx.textAlign='center';ctx.fillText('GAME OVER',COLS*BS/2,canvas.height/2);}
+  }
+  function tick(){if(lost)return;if(!collide(piece,0,1))piece.y++;else{merge();clearLines();newPiece();}draw();}
+  gameLoop=setInterval(()=>{tick();draw();},500);draw();
+}
+
+// ─── BREAKOUT ────────────────────────────────────────
+function initBreakout(canvas){
+  canvas.width=480;canvas.height=400;
+  const ctx=canvas.getContext('2d');
+  const PW=80,PH=10,BR=8,BC=8,BW=44,BH=16,GAP=6;
+  let px=(canvas.width-PW)/2,ball={x:240,y:340,vx:3,vy:-3},score=0,lives=3,over=false;
+  const colors=['#ff6584','#ffd166','#48cae4','#64ffda','#a855f7'];
+  let bricks=[];
+  for(let r=0;r<BR;r++)for(let c=0;c<BC;c++)bricks.push({x:c*(BW+GAP)+30,y:r*(BH+GAP)+40,alive:true,color:colors[r%colors.length]});
+  canvas.onmousemove=e=>{const r=canvas.getBoundingClientRect();px=Math.min(canvas.width-PW,Math.max(0,e.clientX-r.left-PW/2));};
+  gameState.onKey=e=>{
+    if(e.key==='ArrowLeft')px=Math.max(0,px-18);
+    if(e.key==='ArrowRight')px=Math.min(canvas.width-PW,px+18);
+  };
+  document.getElementById('game-hint').textContent='Mouse or Arrow keys to move paddle';
+  let raf;
+  function frame(){
+    if(over){raf=requestAnimationFrame(frame);return;}
+    ball.x+=ball.vx;ball.y+=ball.vy;
+    if(ball.x<=5||ball.x>=canvas.width-5)ball.vx*=-1;
+    if(ball.y<=5)ball.vy*=-1;
+    if(ball.y>=canvas.height){lives--;ball={x:240,y:340,vx:3+Math.random(),vy:-3};if(lives<=0)over=true;}
+    if(ball.y>=canvas.height-PH-20&&ball.x>=px&&ball.x<=px+PW&&ball.vy>0){ball.vy*=-1;ball.vx+=(ball.x-(px+PW/2))/20;}
+    bricks.forEach(b=>{
+      if(!b.alive)return;
+      if(ball.x>b.x&&ball.x<b.x+BW&&ball.y>b.y&&ball.y<b.y+BH){b.alive=false;ball.vy*=-1;score+=10;}
+    });
+    document.getElementById('game-score').textContent='SCORE: '+score;
+    // draw
+    ctx.fillStyle='#080a12';ctx.fillRect(0,0,canvas.width,canvas.height);
+    bricks.forEach(b=>{if(!b.alive)return;ctx.fillStyle=b.color;ctx.beginPath();ctx.roundRect(b.x,b.y,BW,BH,4);ctx.fill();});
+    ctx.fillStyle='#6c63ff';ctx.beginPath();ctx.roundRect(px,canvas.height-20,PW,PH,5);ctx.fill();
+    ctx.fillStyle='#ffffff';ctx.beginPath();ctx.arc(ball.x,ball.y,6,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#4a5280';ctx.font='12px Orbitron,sans-serif';ctx.textAlign='left';
+    ctx.fillText('♥'.repeat(lives),10,18);
+    if(bricks.every(b=>!b.alive)){ctx.fillStyle='rgba(0,0,0,0.6)';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#64ffda';ctx.font='bold 24px Orbitron,sans-serif';ctx.textAlign='center';ctx.fillText('YOU WIN!',canvas.width/2,canvas.height/2);}
+    if(over){ctx.fillStyle='rgba(0,0,0,0.6)';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#ff6b6b';ctx.font='bold 24px Orbitron,sans-serif';ctx.textAlign='center';ctx.fillText('GAME OVER',canvas.width/2,canvas.height/2);}
+    raf=requestAnimationFrame(frame);
+  }
+  gameLoop=raf;frame();
+  gameLoop={cancel:()=>cancelAnimationFrame(raf)};
+}
+
+// ─── ASTEROIDS ───────────────────────────────────────
+function initAsteroid(canvas){
+  canvas.width=500;canvas.height=400;
+  const ctx=canvas.getContext('2d');
+  let ship={x:250,y:200,a:-Math.PI/2,vx:0,vy:0},bullets=[],asteroids=[],score=0,lives=3,over=false,frame_n=0;
+  function spawnAsteroid(x,y,r){
+    asteroids.push({x:x||Math.random()*canvas.width,y:y||Math.random()*canvas.height,vx:(Math.random()-0.5)*2,vy:(Math.random()-0.5)*2,r:r||40,a:Math.random()*Math.PI*2,da:(Math.random()-0.5)*0.03,pts:Array.from({length:8},(_,i)=>{const ang=i/8*Math.PI*2;const rr=(r||40)*(0.7+Math.random()*0.3);return{x:Math.cos(ang)*rr,y:Math.sin(ang)*rr};})});
+  }
+  for(let i=0;i<5;i++)spawnAsteroid();
+  const keys={};
+  gameState.onKey=e=>{keys[e.key]=e.type==='keydown';if(e.key===' '){bullets.push({x:ship.x+Math.cos(ship.a)*14,y:ship.y+Math.sin(ship.a)*14,vx:Math.cos(ship.a)*7+ship.vx,vy:Math.sin(ship.a)*7+ship.vy,life:60});}e.preventDefault();};
+  document.addEventListener('keyup',e=>{keys[e.key]=false;});
+  document.getElementById('game-hint').textContent='← → turn · ↑ thrust · Space shoot';
+  function wrap(v,max){return((v%max)+max)%max;}
+  function raf_fn(){
+    if(over){requestAnimationFrame(raf_fn);return;}
+    frame_n++;
+    if(keys['ArrowLeft'])ship.a-=0.05;
+    if(keys['ArrowRight'])ship.a+=0.05;
+    if(keys['ArrowUp']){ship.vx+=Math.cos(ship.a)*0.15;ship.vy+=Math.sin(ship.a)*0.15;}
+    ship.vx*=0.99;ship.vy*=0.99;
+    ship.x=wrap(ship.x+ship.vx,canvas.width);ship.y=wrap(ship.y+ship.vy,canvas.height);
+    bullets.forEach(b=>{b.x+=b.vx;b.y+=b.vy;b.life--;});
+    bullets=bullets.filter(b=>b.life>0);
+    asteroids.forEach(a=>{a.x=wrap(a.x+a.vx,canvas.width);a.y=wrap(a.y+a.vy,canvas.height);a.a+=a.da;});
+    // collisions
+    bullets.forEach((b,bi)=>{
+      asteroids.forEach((a,ai)=>{
+        const d=Math.hypot(b.x-a.x,b.y-a.y);
+        if(d<a.r){bullets.splice(bi,1);asteroids.splice(ai,1);score+=a.r>20?10:20;
+          if(a.r>20){spawnAsteroid(a.x,a.y,a.r/2);spawnAsteroid(a.x,a.y,a.r/2);}
+        }
+      });
+    });
+    asteroids.forEach(a=>{if(Math.hypot(ship.x-a.x,ship.y-a.y)<a.r-4){lives--;ship.x=250;ship.y=200;ship.vx=0;ship.vy=0;if(lives<=0)over=true;}});
+    if(!asteroids.length){for(let i=0;i<5+Math.floor(score/100);i++)spawnAsteroid();}
+    document.getElementById('game-score').textContent='SCORE: '+score;
+    // draw
+    ctx.fillStyle='#070910';ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.strokeStyle='rgba(255,255,255,0.04)';
+    for(let i=0;i<20;i++){ctx.beginPath();ctx.arc(Math.sin(i*137)*canvas.width/2+canvas.width/2,Math.cos(i*137)*canvas.height/2+canvas.height/2,1,0,Math.PI*2);ctx.fillStyle='#ffffff33';ctx.fill();}
+    asteroids.forEach(a=>{
+      ctx.save();ctx.translate(a.x,a.y);ctx.rotate(a.a);
+      ctx.strokeStyle='#48cae4';ctx.lineWidth=1.5;ctx.beginPath();
+      a.pts.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));ctx.closePath();ctx.stroke();ctx.restore();
+    });
+    bullets.forEach(b=>{ctx.fillStyle='#ffd166';ctx.beginPath();ctx.arc(b.x,b.y,2.5,0,Math.PI*2);ctx.fill();});
+    // ship
+    ctx.save();ctx.translate(ship.x,ship.y);ctx.rotate(ship.a);
+    ctx.strokeStyle='#64ffda';ctx.lineWidth=2;ctx.beginPath();
+    ctx.moveTo(14,0);ctx.lineTo(-10,8);ctx.lineTo(-6,0);ctx.lineTo(-10,-8);ctx.closePath();ctx.stroke();
+    if(keys['ArrowUp']&&frame_n%4<2){ctx.strokeStyle='#ff9a5c';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(-6,0);ctx.lineTo(-16,0);ctx.stroke();}
+    ctx.restore();
+    ctx.fillStyle='#ff6584';ctx.font='12px Orbitron,sans-serif';ctx.textAlign='left';ctx.fillText('♥'.repeat(lives),8,18);
+    if(over){ctx.fillStyle='rgba(0,0,0,0.65)';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#ff6b6b';ctx.font='bold 22px Orbitron,sans-serif';ctx.textAlign='center';ctx.fillText('GAME OVER',canvas.width/2,canvas.height/2);}
+    requestAnimationFrame(raf_fn);
+  }raf_fn();
+}
+
+function initGames(){}
+
+// ═══════════════════════════════════════════════════════
+// APP RUNNER
+// ═══════════════════════════════════════════════════════
+function buildARHTML(){
+  return `<div id="ar-body"><div id="app-drop-zone" onclick="document.getElementById('app-file-input').click()"><div class="drop-icon">📦</div><p>Drop or click to open an app</p><span>Supports .exe and .app files</span></div><input type="file" id="app-file-input" accept=".exe,.app,.html,.js,.zip" multiple><div id="app-log"><div class="log-info">NoverOS App Runtime v2.0</div><div class="log-info">Ready · Wine/Proton + macOS shim loaded</div><div style="color:var(--text3);">────────────────────────────</div></div><div id="app-actions"><button class="action-btn" onclick="clearLog()">🗑 Clear</button><button class="action-btn" onclick="document.getElementById('app-file-input').click()">📂 Open</button><button class="action-btn primary" onclick="runDemo()">▶ Demo App</button></div></div>`;
+}
+function initAppRunner(){
+  document.getElementById('app-file-input').addEventListener('change',e=>{[...e.target.files].forEach(f=>simulateRun(f));});
+  const zone=document.getElementById('app-drop-zone');
+  zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('drag-over');});
+  zone.addEventListener('dragleave',()=>zone.classList.remove('drag-over'));
+  zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('drag-over');[...e.dataTransfer.files].forEach(f=>simulateRun(f));});
+  window.clearLog=()=>{const l=document.getElementById('app-log');if(l)l.innerHTML='<div class="log-info">Log cleared.</div>';};
+  window.runDemo=()=>simulateRun({name:'DemoApp.exe',size:2097152});
+}
+function log(msg,cls=''){
+  const l=document.getElementById('app-log');if(!l)return;
+  const d=document.createElement('div');d.className=cls;d.textContent=msg;
+  l.appendChild(d);l.scrollTop=l.scrollHeight;
+}
+function simulateRun(file){
+  const ext=(file.name.split('.').pop()||'').toLowerCase();
+  const size=(file.size/1024).toFixed(1);
+  log('');log(`[RUNNER] Loading: ${file.name} (${size} KB)`,'log-info');
+  const steps=ext==='exe'?[['Detecting Windows PE format...',''],['Activating Wine/Proton layer...',''],['Virtual filesystem mount...',''],['Registry sandbox init...',''],['Launching in container...',''],['✓ Running in NoverOS compatibility mode','log-info']]:ext==='app'?[['Detecting macOS bundle...',''],['Parsing Info.plist...',''],['Mach-O binary translation...',''],['Launching macOS shim...',''],['✓ macOS app running via NoverOS layer','log-info']]:[['Detecting format: .'+ext,''],['Generic container launch...',''],['✓ Loaded: '+file.name,'']];
+  steps.forEach((s,i)=>setTimeout(()=>log(s[0],s[1]),i*320+200));
+  setTimeout(()=>notify('App Runner',`${file.name} launched`),steps.length*320+500);
+}
+
+// ═══════════════════════════════════════════════════════
+// FILE MANAGER
+// ═══════════════════════════════════════════════════════
+function buildFMHTML(){
+  const files=[
+    {n:'Documents',i:'📁',t:'folder'},{n:'Downloads',i:'📁',t:'folder'},
+    {n:'Music',i:'🎵',t:'music'},{n:'Pictures',i:'🖼️',t:'folder'},
+    {n:'readme.txt',i:'📄',t:'file'},{n:'setup.exe',i:'⚙️',t:'exe'},
+    {n:'MyApp.app',i:'🍎',t:'app'},{n:'photo.png',i:'🖼️',t:'image'},
+    {n:'song.mp3',i:'🎵',t:'mp3'},{n:'data.zip',i:'🗜️',t:'zip'},
+  ];
+  return `<div id="fm-body"><div id="fm-sidebar"><div class="fm-s-title">Places</div><div class="fm-item active">🏠 Home</div><div class="fm-item">🖥️ Desktop</div><div class="fm-item">📁 Documents</div><div class="fm-item">⬇️ Downloads</div><div class="fm-s-title">Devices</div><div class="fm-item">💾 Drive C:</div></div><div id="fm-main"><div id="fm-toolbar"><div id="fm-path">~/Home</div></div><div id="fm-grid">${files.map(f=>`<div class="fm-file" ondblclick="fmOpen('${f.n}','${f.t}')"><div class="fm-file-icon">${f.i}</div><div class="fm-file-name">${f.n}</div></div>`).join('')}</div></div></div>`;
+}
+window.fmOpen=(n,t)=>{
+  if(t==='exe'||t==='app'){openApp('apprunner');setTimeout(()=>simulateRun({name:n,size:1024000}),400);}
+  else if(t==='mp3'){openApp('music');}
+  else notify('Files','Opened: '+n);
+};
+
+// ═══════════════════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════════════════
+function buildSettingsHTML(){
+  return `<div id="st-body"><div id="st-nav"><div class="st-nav-item active" onclick="stPage(this,'general')">🖥️ General</div><div class="st-nav-item" onclick="stPage(this,'display')">🎨 Display</div><div class="st-nav-item" onclick="stPage(this,'apps')">📦 Apps</div><div class="st-nav-item" onclick="stPage(this,'about')">ℹ️ About</div></div><div id="st-content"><div id="sp-general"><div class="st-group"><div class="st-group-title">System</div><div class="st-row"><div class="st-row-label">Animations</div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div><div class="st-row"><div class="st-row-label">Show Clock</div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div><div class="st-row"><div class="st-row-label">Notifications</div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div></div></div><div id="sp-display" style="display:none"><div class="st-group"><div class="st-group-title">Display</div><div class="st-row"><div class="st-row-label">Wallpaper</div><span style="font-size:12px;color:var(--accent2);">${selectedWp}</span></div><div class="st-row"><div class="st-row-label">Night Mode</div><div class="toggle" onclick="this.classList.toggle('on')"></div></div></div></div><div id="sp-apps" style="display:none"><div class="st-group"><div class="st-group-title">Compatibility</div><div class="st-row"><div class="st-row-label">.exe (Wine/Proton)</div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div><div class="st-row"><div class="st-row-label">.app (macOS shim)</div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div></div></div><div id="sp-about" style="display:none"><div class="st-group"><div class="st-group-title">About NoverOS</div><div class="st-row"><div class="st-row-label">Version</div><span style="font-size:12px;font-family:var(--mono);color:var(--accent2);">NoverOS 2.0.0</span></div><div class="st-row"><div class="st-row-label">User</div><span style="font-size:12px;color:var(--text2);" id="st-user">${osUsername}</span></div><div class="st-row"><div class="st-row-label">.exe Engine</div><span style="font-size:12px;color:var(--green);">● Active</span></div><div class="st-row"><div class="st-row-label">.app Engine</div><span style="font-size:12px;color:var(--green);">● Active</span></div></div></div></div></div>`;
+}
+window.stPage=(el,page)=>{
+  document.querySelectorAll('.st-nav-item').forEach(i=>i.classList.remove('active'));el.classList.add('active');
+  ['general','display','apps','about'].forEach(p=>{const s=document.getElementById('sp-'+p);if(s)s.style.display=p===page?'':'none';});
+};
+</script>
+</body>
+</html>
